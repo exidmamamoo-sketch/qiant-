@@ -1,5 +1,7 @@
 // 錢途 Service Worker — 讓 Chrome 識別為可安裝 PWA
-const CACHE_NAME = 'qiantú-v1';
+// ⚠️ 每次更新 index.html 時，把下面的版本號 +1（v2 → v3 → ...）
+// App 開啟後會自動偵測新版本並更新快取
+const CACHE_NAME = 'qiantú-v2';
 const ASSETS = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
