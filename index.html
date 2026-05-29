@@ -963,7 +963,7 @@ function switchChart(type){
   renderCatChart(getTxInRange());
 }
 function renderDash(){
-  const txs=getTxInRange();
+  const txs=getTxInRange().filter(x=>x.type!=='income');
   const total=txs.reduce((s,x)=>s+x.amount,0);
   const{from,to}=getRange();
   const fd=new Date(from+'T00:00:00'),td2=new Date(to+'T00:00:00');
@@ -986,9 +986,9 @@ function renderDash(){
   document.getElementById('all-tx').innerHTML=html||`<div class="empty"><div class="ei">🔍</div><div class="et">此期間沒有記帳</div></div>`;
 }
 function renderCatChart(txs){
-  // Tally by category
+  // Tally by category (expenses only)
   const bc={};
-  txs.forEach(t=>{bc[t.cat]=(bc[t.cat]||0)+t.amount;});
+  txs.filter(t=>t.type!=='income').forEach(t=>{bc[t.cat]=(bc[t.cat]||0)+t.amount;});
   const active=cats.filter(c=>bc[c.id]>0).sort((a,b)=>(bc[b.id]||0)-(bc[a.id]||0));
   if(catChart){catChart.destroy();catChart=null;}
   const wrap=document.getElementById('cat-wrap');
@@ -1036,7 +1036,7 @@ function renderTrendChart(txs,from,to,rangeDays){
       const d=new Date(fd);d.setDate(d.getDate()+i);
       const ds=tstr(d);
       labels.push(`${d.getMonth()+1}/${d.getDate()}`);
-      vals.push(txns.filter(t=>t.date===ds).reduce((s,t)=>s+t.amount,0));
+      vals.push(txns.filter(t=>t.date===ds&&t.type!=='income').reduce((s,t)=>s+t.amount,0));
     }
   }else{
     // Weekly buckets
@@ -1047,7 +1047,7 @@ function renderTrendChart(txs,from,to,rangeDays){
       if(wEnd>td2)wEnd.setTime(td2.getTime());
       const wFrom=tstr(cur),wTo=tstr(wEnd);
       labels.push(`W${wk}`);
-      vals.push(txns.filter(t=>t.date>=wFrom&&t.date<=wTo).reduce((s,t)=>s+t.amount,0));
+      vals.push(txns.filter(t=>t.date>=wFrom&&t.date<=wTo&&t.type!=='income').reduce((s,t)=>s+t.amount,0));
       cur.setDate(cur.getDate()+7);wk++;
     }
   }
@@ -1208,7 +1208,7 @@ function exportCSV(){
 const AI_FNS={
   '財務|狀況|這個月'(){
     const pfx=todayStr().slice(0,7);
-    const m=txns.filter(x=>x.date.startsWith(pfx));
+    const m=txns.filter(x=>x.date.startsWith(pfx)&&x.type!=='income');
     const total=m.reduce((s,x)=>s+x.amount,0);
     const fc=m.filter(x=>x.cat==='food').reduce((s,x)=>s+x.amount,0);
     const dn=new Date().getDate();
@@ -1216,7 +1216,7 @@ const AI_FNS={
   },
   '類別|最多|花哪'(){
     const pfx=todayStr().slice(0,7);
-    const m=txns.filter(x=>x.date.startsWith(pfx));
+    const m=txns.filter(x=>x.date.startsWith(pfx)&&x.type!=='income');
     const bc={};m.forEach(x=>{bc[x.cat]=(bc[x.cat]||0)+x.amount;});
     const top=Object.entries(bc).sort((a,b)=>b[1]-a[1]).slice(0,3);
     if(!top.length)return'本月還沒有記帳資料。';

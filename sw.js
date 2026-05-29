@@ -1,7 +1,7 @@
 // 錢途 Service Worker — Network-First 策略
 // HTML/JS 優先抓網路新版，離線時才用快取備援
 // 圖示與 manifest 用快取優先（幾乎不變）
-const CACHE_NAME = 'qiantú-v5';
+const CACHE_NAME = 'qiantú-v6';
 const STATIC_ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
