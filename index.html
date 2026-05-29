@@ -300,6 +300,23 @@ body{
 .btn-save{flex:1;padding:12px;border-radius:var(--rs);background:var(--p);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
 .btn-save:hover{background:var(--pd);}
 .btn-del{padding:12px 16px;border-radius:var(--rs);background:var(--exl);color:var(--exp);border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+/* ── ENTRY TYPE TOGGLE ── */
+.type-toggle{display:flex;margin:10px 14px 0;border:2px solid var(--bd);border-radius:12px;overflow:hidden;}
+.tt-btn{flex:1;padding:9px;border:none;background:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--t2);transition:all .15s;}
+.tt-btn.on-exp{background:var(--exl);color:var(--exp);}
+.tt-btn.on-inc{background:var(--pl);color:var(--p);}
+/* ── INCOME TX ── */
+.txi-amt-inc{font-size:14px;font-weight:600;color:var(--p);flex-shrink:0;}
+/* ── QUOTE CARD ── */
+.quote-card{text-align:center;padding:28px 20px;background:var(--card);border-radius:var(--rs);margin-top:8px;}
+.quote-emoji{font-size:36px;margin-bottom:10px;}
+.quote-text{font-size:15px;font-weight:600;color:var(--t);line-height:1.5;}
+/* ── MINI CHART CARD ── */
+.mini-chart-wrap{background:var(--card);border-radius:var(--rs);padding:12px;margin-top:8px;}
+.mini-chart-ttl{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
+.mini-chart-canvas{position:relative;height:130px;}
+/* ── HERO INCOME ROW ── */
+.hero-inc-row{display:flex;gap:20px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);}
 /* ── TOAST ── */
 .toast{position:absolute;top:58px;left:50%;transform:translateX(-50%) translateY(-70px);background:rgba(17,24,39,.88);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:300;transition:transform .26s;white-space:nowrap;backdrop-filter:blur(8px);}
 .toast.show{transform:translateX(-50%) translateY(0);}
@@ -338,13 +355,16 @@ body{
     <div class="hl">今天支出</div>
     <div class="ha">NT$&thinsp;<span id="today-tot">0</span></div>
     <div class="hero-row">
-      <div class="hs"><div class="hv">NT$&thinsp;<span id="mon-tot">0</span></div><div class="hk">本月累計</div></div>
-      <div class="hs"><div class="hv"><span id="tx-cnt">0</span> 筆</div><div class="hk">本月筆數</div></div>
-      <div class="hs"><div class="hv">NT$&thinsp;<span id="daily-avg">0</span></div><div class="hk">日均</div></div>
+      <div class="hs"><div class="hv">NT$&thinsp;<span id="mon-exp">0</span></div><div class="hk">本月支出</div></div>
+      <div class="hs"><div class="hv">NT$&thinsp;<span id="mon-inc">0</span></div><div class="hk">本月收入</div></div>
+      <div class="hs"><div class="hv"><span id="mon-net">－</span></div><div class="hk">淨收支</div></div>
     </div>
   </div>
-  <div class="sec" style="margin-top:14px;"><div class="sec-t">今天</div><div class="txl" id="h-today"></div></div>
-  <div class="sec"><div class="sec-t">昨天</div><div class="txl" id="h-yest"></div></div>
+  <div class="sec" style="margin-top:14px;">
+    <div class="sec-t">今天</div>
+    <div class="txl" id="h-today"></div>
+    <div id="today-extra"></div>
+  </div>
   <div class="pad"></div>
 </div>
 
@@ -442,12 +462,10 @@ body{
     <button class="add-btn" onclick="openCatEdit(null)" style="margin-top:4px;">＋ 新增類別</button>
   </div>
   <div class="settings-sec">
-    <div class="ss-t">安裝 App</div>
-    <button class="sa" id="install-btn" onclick="installApp()"><span>📲</span>加入手機主畫面</button>
-  </div>
-  <div class="settings-sec">
     <div class="ss-t">資料管理</div>
-    <button class="sa" onclick="exportCSV()"><span>📥</span>匯出所有記帳 CSV</button>
+    <button class="sa" onclick="exportCSV()"><span>📥</span>匯出 CSV（Excel 可開啟）</button>
+    <button class="sa" onclick="backupData()"><span>📦</span>備份資料（JSON）</button>
+    <button class="sa" onclick="restoreData()"><span>♻️</span>還原備份</button>
     <button class="sa del" onclick="clearAll()"><span>🗑️</span>清除所有資料</button>
   </div>
   <div style="padding:0 14px;font-size:11px;color:var(--t3);line-height:1.7;">
@@ -472,7 +490,11 @@ body{
 <div class="ov" id="ov-entry" onclick="bgClose(event,'ov-entry')">
   <div class="sheet">
     <div class="sh"></div>
-    <div class="ea"><div class="ea-l">金額（NT$）</div><div class="ea-v" id="ev">0</div></div>
+    <div class="type-toggle">
+      <button class="tt-btn on-exp" id="tt-exp" onclick="setEntryType('expense')">💸 支出</button>
+      <button class="tt-btn" id="tt-inc" onclick="setEntryType('income')">💰 收入</button>
+    </div>
+    <div class="ea"><div class="ea-l" id="entry-amt-lbl">金額（NT$）</div><div class="ea-v" id="ev">0</div></div>
     <div class="edate-row"><span class="edate-lbl">📅 日期</span><input type="date" id="edate" class="edate-inp"></div>
     <input class="enote" id="enote" placeholder="備註（選填）：午餐、捷運、全聯…">
     <div class="chips" id="main-chips"></div>
@@ -557,6 +579,26 @@ const DEFAULT_GOALS=[
 const EMOJIS=['🍱','🍕','🍜','🍞','☕','🧃','🥗','🍺','🚌','🚗','🚕','✈️','⛽','🚲','🛵','🏍️','🛍️','👕','👟','📱','💻','🎧','⌚','📚','🏠','💡','🔌','🛁','🔧','🪑','🌿','🏗️','🎮','🎬','🎵','🏋️','🎯','🎲','💊','🏥','🧘','🦷','🏃','💪','💼','📦','🎁','💰','💳','🏦','📊','🔖','☁️','📺','🔔','⚡','🛡️','🪖','🎓','🏖️','🌍'];
 const COLORS=['#EF4444','#F97316','#F59E0B','#EAB308','#22C55E','#10B981','#06B6D4','#3B82F6','#8B5CF6','#EC4899','#9CA3AF','#1F2937'];
 const LIGHT_BG=['#FEE2E2','#FEF3C7','#DCFCE7','#DBEAFE','#EDE9FE','#FCE7F3','#F3F4F6','#CFFAFE','#FFF7ED','#D1FAE5'];
+const INCOME_CATS=[
+  {id:'salary', name:'薪資',   icon:'💼',color:'#16A34A',subs:['本薪','加班費','年終獎金']},
+  {id:'bonus',  name:'獎金',   icon:'🎁',color:'#10B981',subs:['績效獎金','節慶獎金','紅包']},
+  {id:'side',   name:'副業',   icon:'💻',color:'#06B6D4',subs:['接案','兼職','網路收入']},
+  {id:'invest', name:'投資收益',icon:'📈',color:'#8B5CF6',subs:['股息','基金','利息']},
+  {id:'refund', name:'退款/轉帳',icon:'↩️',color:'#F59E0B',subs:['退款','轉帳收款']},
+  {id:'oinc',   name:'其他收入',icon:'💰',color:'#9CA3AF',subs:[]},
+];
+const QUOTES=[
+  {e:'📝',t:'今天記帳了嗎？養成好習慣 💪'},
+  {e:'💧',t:'積少成多，滴水穿石'},
+  {e:'🎯',t:'知道錢去哪了，才能決定錢往哪走'},
+  {e:'🌱',t:'財務自由，始於了解自己的支出'},
+  {e:'🏆',t:'記帳不是省錢，是讓你花得更有意義'},
+  {e:'🧋',t:'省一杯手搖飲，存一份安全感'},
+  {e:'⭐',t:'小習慣，大改變'},
+  {e:'🔑',t:'每一筆記帳，都是對自己誠實'},
+  {e:'🚀',t:'財務健康，從今天開始'},
+  {e:'💡',t:'看清楚支出，才能做出更好的選擇'},
+];
 
 // ═══════════════════════════
 // STATE
@@ -587,7 +629,8 @@ let txns=[
 ];
 let nextId=21;
 // Entry state
-let eNum='', eCat='', eSub='', eDate='', eTxId=null;
+let eNum='', eCat='', eSub='', eDate='', eTxId=null, eType='expense';
+let todayChart=null;
 // Report state
 let rangeMode='month', rangeFrom='', rangeTo='';
 let chartType='pie';
@@ -668,22 +711,64 @@ function bgClose(e,id){
 // HOME
 // ═══════════════════════════
 function renderHome(){
-  const td=todayStr(),yd=yesterStr();
-  const yTx=txns.filter(x=>x.date===td);
-  const ysTx=txns.filter(x=>x.date===yd);
+  const td=todayStr();
   const mPfx=td.slice(0,7);
   const mTx=txns.filter(x=>x.date.startsWith(mPfx));
-  const mSum=mTx.reduce((s,x)=>s+x.amount,0);
-  const dn=new Date().getDate();
-  document.getElementById('today-tot').textContent=fmt(yTx.reduce((s,x)=>s+x.amount,0));
-  document.getElementById('mon-tot').textContent=fmt(mSum);
-  document.getElementById('tx-cnt').textContent=mTx.length;
-  document.getElementById('daily-avg').textContent=fmt(Math.round(mSum/dn));
+  const mExp=mTx.filter(x=>x.type!=='income');
+  const mInc=mTx.filter(x=>x.type==='income');
+  const mExpSum=mExp.reduce((s,x)=>s+x.amount,0);
+  const mIncSum=mInc.reduce((s,x)=>s+x.amount,0);
+  const mNet=mIncSum-mExpSum;
+  const todayTx=txns.filter(x=>x.date===td);
+  const todayExp=todayTx.filter(x=>x.type!=='income');
+  document.getElementById('today-tot').textContent=fmt(todayExp.reduce((s,x)=>s+x.amount,0));
+  document.getElementById('mon-exp').textContent=fmt(mExpSum);
+  document.getElementById('mon-inc').textContent=fmt(mIncSum);
+  const netEl=document.getElementById('mon-net');
+  if(mNet===0&&mIncSum===0){
+    netEl.textContent='－';netEl.style.color='';
+  }else{
+    const sign=mNet>=0?'＋':'－';
+    netEl.textContent=sign+'NT$ '+fmt(Math.abs(mNet));
+    netEl.style.color=mNet>=0?'#86EFAC':'#FCA5A5';
+    netEl.style.fontSize='12px';
+  }
   const d=new Date();
   const dw=['日','一','二','三','四','五','六'];
   document.getElementById('today-lbl').textContent=`${d.getMonth()+1}月${d.getDate()}日，星期${dw[d.getDay()]}`;
-  renderTxList('h-today',yTx,true);
-  renderTxList('h-yest',ysTx,false);
+  // Today list
+  const listEl=document.getElementById('h-today');
+  listEl.innerHTML=todayTx.length?todayTx.map(makeTxHTML).join(''):'';
+  // Today extra: pie chart or quote
+  renderTodayExtra(todayExp);
+}
+function renderTodayExtra(todayExp){
+  const el=document.getElementById('today-extra');
+  if(todayChart){todayChart.destroy();todayChart=null;}
+  if(!todayExp.length){
+    const q=QUOTES[new Date().getDate()%QUOTES.length];
+    el.innerHTML=`<div class="quote-card"><div class="quote-emoji">${q.e}</div><div class="quote-text">${q.t}</div></div>`;
+    return;
+  }
+  // Category breakdown pie
+  const bc={};
+  todayExp.forEach(t=>{bc[t.cat]=(bc[t.cat]||0)+t.amount;});
+  const active=cats.filter(c=>bc[c.id]>0);
+  if(active.length<2){el.innerHTML='';return;}
+  el.innerHTML=`<div class="mini-chart-wrap"><div class="mini-chart-ttl">今日支出分類</div><div class="mini-chart-canvas"><canvas id="today-canvas"></canvas></div></div>`;
+  setTimeout(()=>{
+    const cv=document.getElementById('today-canvas');
+    if(!cv)return;
+    todayChart=new Chart(cv.getContext('2d'),{
+      type:'doughnut',
+      data:{
+        labels:active.map(c=>c.icon+' '+c.name),
+        datasets:[{data:active.map(c=>bc[c.id]),backgroundColor:active.map(c=>c.color),borderWidth:2,borderColor:'#fff'}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'right',labels:{font:{size:9},padding:4,boxWidth:8}}}}
+    });
+  },0);
 }
 function renderTxList(id,txs,showEmpty){
   const el=document.getElementById(id);
@@ -694,12 +779,15 @@ function renderTxList(id,txs,showEmpty){
   el.innerHTML=txs.map(makeTxHTML).join('');
 }
 function makeTxHTML(tx){
-  const c=getCat(tx.cat);
+  const isInc=tx.type==='income';
+  const c=isInc?(INCOME_CATS.find(x=>x.id===tx.cat)||INCOME_CATS[INCOME_CATS.length-1]):getCat(tx.cat);
   const meta=tx.sub?`${c.name} · ${tx.sub}`:c.name;
+  const amtCls=isInc?'txi-amt-inc':'txi-amt';
+  const amtStr=isInc?`＋NT$ ${fmt(tx.amount)}`:`－NT$ ${fmt(tx.amount)}`;
   return`<div class="txi" onclick="openEditTx(${tx.id})">
     <div class="txi-ico" style="background:${hexAlpha(c.color)}">${c.icon}</div>
     <div class="txi-inf"><div class="txi-name">${tx.note||c.name}</div><div class="txi-meta">${meta}</div></div>
-    <div class="txi-amt">－NT$&thinsp;${fmt(tx.amount)}</div>
+    <div class="${amtCls}">${amtStr}</div>
     <span style="font-size:14px;color:var(--t3);padding-left:4px;flex-shrink:0;">›</span>
   </div>`;
 }
@@ -708,47 +796,60 @@ function makeTxHTML(tx){
 // QUICK ENTRY
 // ═══════════════════════════
 function openEntry(){
-  eTxId=null;
-  eNum='';
-  eCat=cats.length?cats[0].id:'other';
-  eSub='';
-  eDate=todayStr();
+  eTxId=null; eType='expense';
+  eNum=''; eCat=cats.length?cats[0].id:'other'; eSub=''; eDate=todayStr();
   document.getElementById('ev').textContent='0';
   document.getElementById('ev').className='ea-v';
   document.getElementById('enote').value='';
   document.getElementById('edate').value=eDate;
   document.getElementById('entry-ok-btn').textContent='確認';
   document.getElementById('entry-del-row').classList.remove('show');
-  renderMainChips();
-  renderSubChips();
+  setEntryType('expense');
   document.getElementById('ov-entry').classList.add('open');
+}
+function setEntryType(type){
+  eType=type;
+  const expBtn=document.getElementById('tt-exp');
+  const incBtn=document.getElementById('tt-inc');
+  expBtn.className='tt-btn'+(type==='expense'?' on-exp':'');
+  incBtn.className='tt-btn'+(type==='income'?' on-inc':'');
+  document.getElementById('entry-amt-lbl').textContent=type==='income'?'收入金額（NT$）':'支出金額（NT$）';
+  // Reset category to first of appropriate type
+  if(type==='income'){ eCat=INCOME_CATS[0].id; }
+  else{ eCat=cats.length?cats[0].id:'other'; }
+  eSub='';
+  renderMainChips(); renderSubChips();
 }
 function openEditTx(id){
   const tx=txns.find(x=>x.id===id);
   if(!tx)return;
-  eTxId=id;
-  eNum=String(tx.amount);
-  eCat=tx.cat;
-  eSub=tx.sub||'';
-  eDate=tx.date;
+  eTxId=id; eType=tx.type||'expense';
+  eNum=String(tx.amount); eCat=tx.cat; eSub=tx.sub||''; eDate=tx.date;
   document.getElementById('ev').textContent=fmt(tx.amount);
   document.getElementById('ev').className='ea-v hi';
   document.getElementById('enote').value=tx.note||'';
   document.getElementById('edate').value=eDate;
   document.getElementById('entry-ok-btn').textContent='更新';
   document.getElementById('entry-del-row').classList.add('show');
-  renderMainChips();
-  renderSubChips();
+  // Set toggle state without resetting eCat
+  const expBtn=document.getElementById('tt-exp');
+  const incBtn=document.getElementById('tt-inc');
+  expBtn.className='tt-btn'+(eType==='expense'?' on-exp':'');
+  incBtn.className='tt-btn'+(eType==='income'?' on-inc':'');
+  document.getElementById('entry-amt-lbl').textContent=eType==='income'?'收入金額（NT$）':'支出金額（NT$）';
+  renderMainChips(); renderSubChips();
   document.getElementById('ov-entry').classList.add('open');
 }
 function renderMainChips(){
-  document.getElementById('main-chips').innerHTML=cats.map(c=>
+  const list=eType==='income'?INCOME_CATS:cats;
+  document.getElementById('main-chips').innerHTML=list.map(c=>
     `<button class="chip${c.id===eCat?' sel':''}" onclick="pickCat('${c.id}')">${c.icon} ${c.name}</button>`
   ).join('');
 }
 function pickCat(id){eCat=id;eSub='';renderMainChips();renderSubChips();}
 function renderSubChips(){
-  const c=getCat(eCat);
+  const list=eType==='income'?INCOME_CATS:cats;
+  const c=list.find(x=>x.id===eCat)||(list.length?list[0]:{subs:[]});
   const wrap=document.getElementById('sub-chips');
   if(!c.subs||!c.subs.length){wrap.classList.remove('show');wrap.innerHTML='';return;}
   wrap.classList.add('show');
@@ -774,10 +875,10 @@ function confirmEntry(){
   const noteVal=note||c.name;
   if(eTxId!==null){
     const idx=txns.findIndex(x=>x.id===eTxId);
-    if(idx>=0) txns[idx]={...txns[idx],date,amount:amt,note:noteVal,cat:eCat,sub:eSub};
+    if(idx>=0) txns[idx]={...txns[idx],date,amount:amt,note:noteVal,cat:eCat,sub:eSub,type:eType};
     toast('✅ 已更新');
   }else{
-    txns.unshift({id:nextId++,date,amount:amt,note:noteVal,cat:eCat,sub:eSub});
+    txns.unshift({id:nextId++,date,amount:amt,note:noteVal,cat:eCat,sub:eSub,type:eType});
     toast(`✅ NT$ ${fmt(amt)} 已記帳`);
   }
   save();
@@ -1314,6 +1415,40 @@ function tick(){
   document.getElementById('sttime').textContent=`${n.getHours()}:${p2(n.getMinutes())}`;
 }
 tick();setInterval(tick,15000);
+
+// ═══════════════════════════
+// BACKUP / RESTORE
+// ═══════════════════════════
+function backupData(){
+  const data={version:1,exportDate:todayStr(),txns,cats,goals};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`錢途備份_${todayStr()}.json`;a.click();
+  URL.revokeObjectURL(url);
+  toast('📦 資料已備份，請存到安全的地方');
+}
+function restoreData(){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='.json';
+  inp.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const d=JSON.parse(ev.target.result);
+        if(!d.txns||!d.cats||!d.goals)throw new Error('格式錯誤');
+        if(!confirm(`確定還原 ${d.exportDate||'未知日期'} 的備份？目前資料將被覆蓋。`))return;
+        txns=d.txns;cats=d.cats;goals=d.goals;
+        nextId=txns.length?Math.max(...txns.map(x=>x.id))+1:1;
+        save();renderHome();renderSettings();
+        toast('✅ 資料已還原成功');
+      }catch(err){toast('⚠️ 檔案格式錯誤，還原失敗');}
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
 
 // ═══════════════════════════
 // INSTALL / PWA
