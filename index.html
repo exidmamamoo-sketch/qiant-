@@ -754,7 +754,7 @@ function renderTodayExtra(todayExp){
   const bc={};
   todayExp.forEach(t=>{bc[t.cat]=(bc[t.cat]||0)+t.amount;});
   const active=cats.filter(c=>bc[c.id]>0);
-  if(active.length<2){el.innerHTML='';return;}
+  if(!active.length){el.innerHTML='';return;}
   el.innerHTML=`<div class="mini-chart-wrap"><div class="mini-chart-ttl">今日支出分類</div><div class="mini-chart-canvas"><canvas id="today-canvas"></canvas></div></div>`;
   setTimeout(()=>{
     const cv=document.getElementById('today-canvas');
